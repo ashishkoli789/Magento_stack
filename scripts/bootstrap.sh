@@ -2,70 +2,83 @@
 
 set -e
 
-echo "Updating system packages..."
+echo "======================================"
+echo "Magento EC2 Bootstrap Script"
+echo "======================================"
+
+echo "[1/8] Updating system packages..."
 sudo apt update && sudo apt upgrade -y
 
-echo "Installing required packages..."
+echo "[2/8] Installing required packages..."
 sudo apt install -y 
 ca-certificates 
 curl 
 gnupg 
 lsb-release 
 git 
+ufw 
 unzip
 
-echo "Installing Docker..."
+echo "[3/8] Installing Docker..."
 
-if ! command -v docker &> /dev/null
-then
+sudo install -m 0755 -d /etc/apt/keyrings
+
 curl -fsSL https://download.docker.com/linux/debian/gpg | 
-sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-```
-echo \
-  "deb [arch=$(dpkg --print-architecture) \
-  signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
-  https://download.docker.com/linux/debian \
-  $(lsb_release -cs) stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo 
+"deb [arch=$(dpkg --print-architecture) 
+signed-by=/etc/apt/keyrings/docker.gpg] 
+https://download.docker.com/linux/debian 
+$(. /etc/os-release && echo "$VERSION_CODENAME") stable" | 
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt update
 
-sudo apt install -y \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-buildx-plugin \
-    docker-compose-plugin
-```
+sudo apt install -y 
+docker-ce 
+docker-ce-cli 
+containerd.io 
+docker-buildx-plugin 
+docker-compose-plugin
 
-fi
+echo "[4/8] Enabling Docker service..."
 
-echo "Enabling Docker service..."
 sudo systemctl enable docker
 sudo systemctl start docker
 
-echo "Adding current user to docker group..."
+echo "[5/8] Creating application group..."
+
+if ! getent group clp > /dev/null; then
+sudo groupadd clp
+fi
+
+echo "[6/8] Adding current user to docker group..."
+
 sudo usermod -aG docker $USER
 
-echo "Creating 2GB swap file..."
+echo "[7/8] Creating swap file..."
+
 if [ ! -f /swapfile ]; then
 sudo fallocate -l 2G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 
-```
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-```
 
 fi
 
-echo "Creating required directories..."
-mkdir -p nginx/ssl
-mkdir -p mysql/data
+echo "[8/8] Configuring firewall..."
 
-echo "Starting Docker stack..."
-docker compose up -d --build
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 
+sudo ufw --force enable
+
+echo "======================================"
 echo "Bootstrap completed successfully."
+echo "======================================"
+
+echo "Logout/login recommended for docker group changes."
