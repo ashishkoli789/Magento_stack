@@ -34,5 +34,5 @@ COPY cron/magento-cron /etc/cron.d/magento-cron
 
 RUN chmod 0644 /etc/cron.d/magento-cron && \
     crontab /etc/cron.d/magento-cron
-RUN echo "memory_limit=2G" > /usr/local/etc/php/conf.d/memory-limit.ini
+RUN echo "memory_limit=512m" > /usr/local/etc/php/conf.d/memory-limit.ini
 CMD ["cron", "-f"]

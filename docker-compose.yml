@@ -14,12 +14,14 @@ services:
       - varnish
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet http://localhost || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
     networks:
       - magento-net
+    mem_limit: 192m
+
 
   php:
     build: ./php
@@ -35,6 +37,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    mem_limit: 256m
+
+
 
   cron:
     build:
@@ -54,7 +59,7 @@ services:
 
     networks:
       - magento-net
-
+    mem_limit: 128m
 
   mysql:
     image: mysql:8.0.36
@@ -76,10 +81,9 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-
-
     networks:
       - magento-net
+    mem_limit: 256m
 
   redis:
     image: redis:7.2.4
@@ -92,6 +96,7 @@ services:
       retries: 5
     networks:
       - magento-net
+    mem_limit: 128m
 
   opensearch:
     image: opensearchproject/opensearch:2.11.1
@@ -99,7 +104,7 @@ services:
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true
-      - OPENSEARCH_JAVA_OPTS=-Xms256m -Xmx256m
+      - OPENSEARCH_JAVA_OPTS=-Xms128m -Xmx128m
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     restart: unless-stopped
@@ -111,6 +116,7 @@ services:
       start_period: 60s
     networks:
       - magento-net
+    mem_limit: 512m
 
   varnish:
     image: varnish:7.5
@@ -132,7 +138,7 @@ services:
       retries: 5
     networks:
       - magento-net
-
+    mem_limit: 128m
   nginx-app:
     build: ./nginx-app
     container_name: nginx-app
@@ -142,7 +148,10 @@ services:
       - php
     restart: unless-stopped
     networks:
-      - magento-net 
+      - magento-net
+    mem_limit: 128m
+
+ 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: phpmyadmin
