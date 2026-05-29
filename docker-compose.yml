@@ -13,6 +13,11 @@ services:
     depends_on:
       - varnish
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --quiet http://localhost || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - magento-net
 
@@ -25,6 +30,12 @@ services:
       - "9000"
     networks:
       - magento-net
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm -t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   cron:
     build:
       context: .
@@ -59,6 +70,14 @@ services:
       - mysql-data:/var/lib/mysql
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+
     networks:
       - magento-net
 
@@ -66,6 +85,11 @@ services:
     image: redis:7.2.4
     container_name: redis
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - magento-net
 
@@ -79,6 +103,12 @@ services:
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - magento-net
 
@@ -94,7 +124,12 @@ services:
       -s malloc,256m
     depends_on:
       - php
-    restart: unless-stopped
+    restart: unless-stopped 
+    healthcheck:
+      test: ["CMD-SHELL", "varnishadm ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     networks:
       - magento-net
 
