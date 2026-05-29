@@ -1,0 +1,1 @@
+* * * * * test-ssh cd /var/www/html && php bin/magento cron:run >> /var/log/magento-cron.log 2>&1
